@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Prompt Grabber</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <button id="openPromptPoolButton" class="brand-mark" type="button" aria-label="Open Prompt Pool" title="Prompt Pool">P</button>
+        <div class="brand-copy"><h1>Prompt Grabber</h1><p id="statusText">Checking this page…</p></div>
+        <label class="switch" title="Turn automatic capture on or off"><input id="globalToggle" type="checkbox" aria-label="Automatic prompt capture"><span class="switch-track"></span></label>
+      </header>
+
+      <section id="sitePanel" class="site-panel" hidden>
+        <span id="siteDot" class="status-dot"></span>
+        <div><strong id="siteName">Current site</strong><span id="siteMessage">Automatic capture is active</span></div>
+        <button id="enableSiteButton" class="button button--primary button--small" type="button" hidden>Enable site</button>
+      </section>
+
+      <section class="summary" aria-label="Prompt summary">
+        <div><strong id="totalCount">0</strong><span>saved prompts</span></div>
+        <button id="openManagerButton" class="text-button" type="button">Full history</button>
+      </section>
+
+      <section id="combinePanel" class="combine-panel" hidden>
+        <div class="combine-panel__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 12h8M12 8v8"/></svg>
+        </div>
+        <div class="combine-panel__copy"><strong><span id="combineCount">0</span> selected</strong><span id="combineRuleCount">0 active rules</span></div>
+        <div class="combine-actions">
+          <button id="copyCombinedButton" class="button button--ghost button--small" type="button" title="Combine prompts unchanged">Combine</button>
+          <button id="compileCombinedButton" class="button button--primary button--small" type="button" title="Compile with local AI; active rules are optional">Compile</button>
+        </div>
+        <button id="clearCombineButton" class="combine-clear" type="button" aria-label="Clear selection" title="Clear selection">×</button>
+      </section>
+      <section class="recent-section">
+        <div class="section-heading">
+          <h2>Recent prompts</h2>
+          <div class="section-heading__actions">
+            <label class="date-filter" title="Filter prompts by date">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 9h16"/></svg>
+              <select id="promptDateFilter" aria-label="Filter recent prompts by date">
+                <option value="all">All</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="week">7 days</option>
+                <option value="month">30 days</option>
+              </select>
+            </label>
+            <button id="captureNowButton" class="icon-text-button" type="button" title="Grab all user prompts from this chat">Grab now</button>
+          </div>
+        </div>
+        <div id="emptyState" class="empty-state"><div class="empty-icon" aria-hidden="true">✦</div><strong>No prompts yet</strong><p>Submitted prompts will appear here.</p></div>
+        <div id="promptList" class="prompt-list"></div>
+      </section>
+
+      <section class="notes-panel" aria-label="Notes">
+        <div class="notes-panel__head">
+          <div class="notes-panel__title">
+            <span class="notes-panel__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 11h6M9 15h6"/></svg>
+            </span>
+            <div><strong>Notes</strong><span id="notesStatus">Auto-saves as you type</span></div>
+          </div>
+          <button id="addNoteButton" class="note-add-button" type="button" title="New note">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span>New note</span>
+          </button>
+        </div>
+        <div id="notesEmpty" class="notes-empty">No notes yet.</div>
+        <div id="notesList" class="notes-list"></div>
+      </section>
+
+
+      <footer>
+        <span>Stored in this browser</span>
+        <div class="footer-actions"><button id="ruleBookButton" class="footer-text-button" type="button">Rule Book</button><button id="settingsButton" class="icon-button" type="button" aria-label="Open settings" title="Settings">⚙</button></div>
+      </footer>
+    </main>
+    <dialog id="resultDialog" class="result-dialog">
+      <div class="result-sheet">
+        <header class="result-header">
+          <div><span id="resultMode" class="result-mode">Combined</span><h2 id="resultTitle">Combined prompt</h2><p id="resultMeta">Preview only · not saved</p></div>
+          <button id="closeResultButton" class="result-close" type="button" aria-label="Close result">×</button>
+        </header>
+        <div class="result-body"><textarea id="resultText" spellcheck="true" aria-label="Prompt result"></textarea></div>
+        <footer class="result-footer"><span>Review or edit.</span><button id="copyResultButton" class="button button--primary" type="button">Copy prompt</button></footer>
+      </div>
+    </dialog>
+
+    <script src="capture-core.js"></script>
+    <script src="ai-compiler.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

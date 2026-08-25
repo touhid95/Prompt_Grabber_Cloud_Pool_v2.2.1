@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Prompt Grabber — History</title>
+    <link rel="stylesheet" href="manager.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand" aria-label="Prompt Grabber">
+        <button id="openPromptPoolButton" class="brand-mark" type="button" aria-label="Open Prompt Pool" title="Prompt Pool">P</button>
+        <span><strong>Prompt Grabber</strong><small>Automatic prompt history</small></span>
+      </div>
+      <div class="header-actions">
+        <button id="ruleBookButton" class="button button--secondary" type="button">Rule Book</button>
+        <button id="exportJsonButton" class="button button--ghost" type="button">Export JSON</button>
+        <button id="exportCsvButton" class="button button--primary" type="button">Export CSV</button>
+      </div>
+    </header>
+
+    <main id="top" class="layout">
+      <aside class="sidebar">
+        <section class="panel capture-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Automatic capture</h2>
+              <p>Save prompts when they are submitted.</p>
+            </div>
+            <label class="switch">
+              <input id="enabledSetting" type="checkbox" aria-label="Automatic capture">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+          <label class="setting-row">
+            <span><strong>Capture with Enter</strong><small>Shift + Enter is ignored</small></span>
+            <input id="captureOnEnterSetting" type="checkbox">
+          </label>
+          <label class="setting-row">
+            <span><strong>Activation notice</strong><small>Show when capture is active</small></span>
+            <input id="toastSetting" type="checkbox">
+          </label>
+          <label class="setting-row">
+            <span><strong>Remember source</strong><small>Store page URL without query data</small></span>
+            <input id="captureUrlSetting" type="checkbox">
+          </label>
+          <label class="select-row">
+            <span><strong>History limit</strong><small>Oldest prompts are removed first</small></span>
+            <select id="maxPromptsSetting">
+              <option value="500">500 prompts</option>
+              <option value="1000">1,000 prompts</option>
+              <option value="2000">2,000 prompts</option>
+              <option value="5000">5,000 prompts</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="panel rule-summary-panel">
+          <div class="panel-heading panel-heading--compact">
+            <div>
+              <p class="rule-kicker">RULE BOOK</p>
+              <h2>Compile instructions</h2>
+              <p>Only toggled-on rules are used.</p>
+            </div>
+          </div>
+          <div class="rule-summary-stats">
+            <span><strong id="ruleTotalStat">0</strong>Rules</span>
+            <span><strong id="ruleActiveStat">0</strong>Active</span>
+          </div>
+          <div class="ai-mini-row"><span class="ai-mini-dot" aria-hidden="true"></span><span>Local AI · no API key</span></div><button id="manageRulesButton" class="button button--secondary button--wide" type="button">Manage rules</button>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading panel-heading--compact"><div><h2>Supported AI sites</h2><p>Built-in sites work immediately.</p></div></div>
+          <div id="supportedSiteList" class="site-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading panel-heading--compact"><div><h2>Additional sites</h2><p>Sites enabled from the toolbar.</p></div></div>
+          <div id="customSiteList" class="custom-site-list"></div>
+          <p id="customSiteEmpty" class="subtle-empty">No additional sites enabled.</p>
+        </section>
+      </aside>
+
+      <section class="content">
+        <div class="hero">
+          <div>
+            <p class="eyebrow">YOUR PROMPT LIBRARY</p>
+            <h1>Every prompt, automatically saved.</h1>
+            <p>Combine prompts exactly, or let local AI compile them. Rules are optional.</p>
+          </div>
+          <div class="stats" aria-label="Prompt statistics">
+            <div><strong id="totalStat">0</strong><span>Total prompts</span></div>
+            <div><strong id="siteStat">0</strong><span>AI sites</span></div>
+            <div><strong id="todayStat">0</strong><span>Today</span></div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <label class="search-field">
+            <span aria-hidden="true">⌕</span>
+            <input id="searchInput" type="search" placeholder="Search prompts…">
+          </label>
+          <select id="siteFilter" aria-label="Filter by AI site"><option value="all">All AI sites</option></select>
+          <select id="dateFilter" aria-label="Filter by date">
+            <option value="all">All dates</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="week">Last 7 days</option><option value="month">Last 30 days</option>
+          </select>
+          <button id="clearAllButton" class="button button--danger-ghost" type="button">Clear all</button>
+        </div>
+
+        <div class="results-header">
+          <span id="resultCount">0 prompts</span>
+          <select id="sortOrder" aria-label="Sort prompt history"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select>
+        </div>
+
+        <div id="historyEmpty" class="history-empty">
+          <div aria-hidden="true">✦</div><h2>No prompts found</h2><p>Submitted prompts will appear here.</p>
+        </div>
+        <div id="historyList" class="history-list"></div>
+        <button id="loadMoreButton" class="load-more" type="button" hidden>Load more</button>
+
+        <section class="manager-notes" aria-label="Notes">
+          <div class="manager-notes__header">
+            <div class="manager-notes__heading">
+              <span class="manager-notes__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+              </span>
+              <div><div class="manager-notes__title-row"><h2>Notes</h2><span id="managerNoteCount">0</span></div><p id="managerNotesStatus">Auto-saves as you type</p></div>
+            </div>
+            <button id="managerAddNoteButton" class="button button--secondary manager-notes__add" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>New note</span>
+            </button>
+          </div>
+          <div id="managerNotesEmpty" class="manager-notes__empty">No notes yet. Create one and it will save automatically.</div>
+          <div id="managerNotesList" class="manager-notes__list"></div>
+        </section>
+
+      </section>
+    </main>
+
+    <section id="combineTray" class="combine-tray" hidden aria-live="polite">
+      <div class="combine-tray__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M8 12h8M12 8v8"/><rect x="4" y="4" width="16" height="16" rx="4"/></svg>
+      </div>
+      <div class="combine-tray__copy"><strong><span id="combineCount">0</span> selected</strong><span id="combineRuleHint">Grab prompts to use them together.</span></div>
+      <button id="clearCombineButton" class="icon-button icon-button--tray" type="button" aria-label="Clear selection" title="Clear selection">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <button id="combineButton" class="button button--ghost" type="button" title="Combine selected prompts without changing their text">Combine</button>
+      <button id="compileButton" class="button button--primary" type="button" title="Compile selected prompts with active Rule Book entries">Compile</button>
+    </section>
+
+    <dialog id="resultDialog" class="result-dialog">
+      <div class="result-sheet">
+        <header class="result-header">
+          <div>
+            <span id="resultMode" class="result-mode">Combined</span>
+            <h2 id="resultTitle">Combined prompt</h2>
+            <p id="resultMeta">Preview only · not saved</p>
+          </div>
+          <button id="closeResultButton" class="dialog-close" type="button" aria-label="Close result" title="Close">×</button>
+        </header>
+        <div class="result-body">
+          <textarea id="resultText" spellcheck="true" aria-label="Prompt result"></textarea>
+        </div>
+        <footer class="result-footer">
+          <span>Review or edit before copying.</span>
+          <div>
+            <button id="closeResultFooterButton" class="button button--ghost" type="button">Close</button>
+            <button id="copyResultButton" class="button button--primary" type="button">Copy prompt</button>
+          </div>
+        </footer>
+      </div>
+    </dialog>
+
+    <dialog id="clearDialog">
+      <form method="dialog">
+        <div class="dialog-icon" aria-hidden="true">!</div><h2>Delete all saved prompts?</h2><p>This removes the prompt history from this browser.</p>
+        <div class="dialog-actions"><button class="button button--ghost" value="cancel">Cancel</button><button id="confirmClearButton" class="button button--danger" value="confirm">Delete everything</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="promptEditDialog" class="prompt-edit-dialog">
+      <form id="promptEditForm" class="prompt-edit-form">
+        <header class="prompt-edit-header">
+          <div><p class="rule-kicker">PROMPT</p><h2>Edit prompt</h2><p>Changes are saved locally and used by Combine and Compile.</p></div>
+          <button id="closePromptEditButton" class="dialog-close" type="button" aria-label="Close prompt editor" title="Close">×</button>
+        </header>
+        <div class="prompt-edit-body">
+          <input id="editingPromptId" type="hidden">
+          <textarea id="promptEditInput" maxlength="100000" spellcheck="true" aria-label="Prompt text"></textarea>
+          <div class="prompt-edit-meta"><span>Original capture is kept internally for duplicate detection.</span><span><strong id="promptEditCount">0</strong> / 100,000</span></div>
+        </div>
+        <footer class="prompt-edit-footer">
+          <button id="cancelPromptEditButton" class="button button--ghost" type="button">Cancel</button>
+          <button class="button button--primary" type="submit">Save changes</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="ruleBookDialog" class="rule-book-dialog">
+      <div class="rule-book-shell">
+        <header class="rule-book-header">
+          <div><p class="rule-kicker">RULE BOOK</p><h2>Rules</h2><p>Used only when you Compile.</p></div>
+          <div class="rule-book-actions">
+            <button id="addRuleButton" class="button button--primary" type="button">New rule</button>
+            <button id="closeRuleBookButton" class="dialog-close" type="button" aria-label="Close rule book" title="Close">×</button>
+          </div>
+        </header>
+        <div class="rule-book-toolbar">
+          <label class="search-field rule-search"><span aria-hidden="true">⌕</span><input id="ruleSearchInput" type="search" placeholder="Search rules…"></label>
+          <span id="ruleBookCount">0 rules</span>
+        </div>
+        <div id="ruleEmpty" class="rule-empty">
+          <div aria-hidden="true">≡</div><h3>No rules yet</h3><p>Add any instruction you want the compiler to follow.</p><button id="emptyAddRuleButton" class="button button--primary" type="button">Create rule</button>
+        </div>
+        <div id="ruleList" class="rule-list"></div>
+      </div>
+    </dialog>
+
+    <dialog id="ruleEditorDialog" class="rule-editor-dialog">
+      <form id="ruleEditorForm" class="rule-editor-form">
+        <header class="rule-editor-header">
+          <div><p class="rule-kicker">RULE BOOK</p><h2 id="ruleEditorTitle">Create rule</h2></div>
+          <button id="closeRuleEditorButton" class="dialog-close" type="button" aria-label="Close editor" title="Close">×</button>
+        </header>
+
+        <div class="rule-editor-body">
+          <input id="editingRuleId" type="hidden">
+          <div class="rule-editor-topline">
+            <label class="form-field form-field--title">
+              <span>Rule name</span>
+              <input id="ruleTitleInput" type="text" maxlength="160" placeholder="e.g. Senior developer output">
+            </label>
+            <label class="rule-toggle-row" title="Use this rule during AI compilation">
+              <span><strong>Use rule</strong><small>Off = ignored by Compile</small></span>
+              <span class="switch switch--compact"><input id="ruleActiveInput" type="checkbox" aria-label="Use this rule during compilation"><span class="switch-track"></span></span>
+            </label>
+          </div>
+
+          <section class="rule-form-section">
+            <div class="rule-form-section__head"><span>01</span><div><strong>Role & Context</strong><small>Who the AI should be and what it needs to know.</small></div></div>
+            <div class="rule-form-grid rule-form-grid--2">
+              <label class="form-field structured-field"><span>Role</span><textarea id="ruleRoleInput" maxlength="2500" rows="3" placeholder="You are an expert Senior React Developer."></textarea><small><span id="ruleRoleCount">0</span>/2,500</small></label>
+              <label class="form-field structured-field"><span>Context / Goal</span><textarea id="ruleContextInput" maxlength="5000" rows="3" placeholder="Your goal is to build clean, accessible UI components."></textarea><small><span id="ruleContextCount">0</span>/5,000</small></label>
+            </div>
+          </section>
+
+          <section class="rule-form-section">
+            <div class="rule-form-section__head"><span>02</span><div><strong>Core Constraints</strong><small>Fill only what matters.</small></div></div>
+            <div class="rule-form-grid rule-form-grid--3">
+              <label class="form-field structured-field"><span>MUST</span><textarea id="ruleMustInput" maxlength="5000" rows="3" placeholder="Use TypeScript for all files."></textarea><small><span id="ruleMustCount">0</span>/5,000</small></label>
+              <label class="form-field structured-field"><span>MUST NOT</span><textarea id="ruleMustNotInput" maxlength="5000" rows="3" placeholder="Use external CSS libraries."></textarea><small><span id="ruleMustNotCount">0</span>/5,000</small></label>
+              <label class="form-field structured-field"><span>SHOULD</span><textarea id="ruleShouldInput" maxlength="5000" rows="3" placeholder="Write self-documenting code."></textarea><small><span id="ruleShouldCount">0</span>/5,000</small></label>
+            </div>
+          </section>
+
+          <section class="rule-form-section">
+            <div class="rule-form-section__head"><span>03</span><div><strong>Output Format</strong><small>Optional structure or formatting instructions.</small></div></div>
+            <label class="form-field structured-field"><textarea id="ruleOutputInput" maxlength="5000" rows="3" placeholder="Return only the code block. Use camelCase for function names."></textarea><small><span id="ruleOutputCount">0</span>/5,000</small></label>
+          </section>
+
+          <section class="rule-form-section">
+            <div class="rule-form-section__head"><span>04</span><div><strong>Examples</strong><small>Optional examples of what to follow or avoid.</small></div></div>
+            <div class="rule-form-grid rule-form-grid--2">
+              <label class="form-field structured-field"><span>Correct style</span><textarea id="ruleCorrectExampleInput" maxlength="5000" rows="3" placeholder="A short ideal example."></textarea><small><span id="ruleCorrectExampleCount">0</span>/5,000</small></label>
+              <label class="form-field structured-field"><span>Incorrect style</span><textarea id="ruleIncorrectExampleInput" maxlength="5000" rows="3" placeholder="What the model should avoid."></textarea><small><span id="ruleIncorrectExampleCount">0</span>/5,000</small></label>
+            </div>
+          </section>
+        </div>
+
+        <footer class="rule-editor-footer">
+          <span>Only one instruction field is needed.</span>
+          <div><button id="cancelRuleButton" class="button button--ghost" type="button">Cancel</button><button id="saveRuleButton" class="button button--primary" type="submit">Save rule</button></div>
+        </footer>
+      </form>
+    </dialog>
+
+    <div id="toast" class="app-toast" role="status" aria-live="polite"></div>
+    <script src="capture-core.js"></script>
+    <script src="ai-compiler.js"></script>
+    <script src="manager.js"></script>
+  </body>
+</html>

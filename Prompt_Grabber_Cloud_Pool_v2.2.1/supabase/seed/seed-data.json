@@ -1,0 +1,162 @@
+[
+  {
+    "id": "10000000-0000-4000-8000-000000000001",
+    "niche": "excel",
+    "title": "Clean a messy Excel workbook",
+    "summary": "Standardize inconsistent spreadsheet data without changing business meaning.",
+    "tags": ["excel", "cleanup", "data-quality"],
+    "score": 24,
+    "grab_count": 61,
+    "file": "excel-clean-messy-workbook.md"
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000002",
+    "niche": "excel",
+    "title": "Build an audit-ready pricing model",
+    "summary": "Turn raw assumptions into a structured pricing model with checks and references.",
+    "tags": ["excel", "pricing", "model", "audit"],
+    "score": 19,
+    "grab_count": 48,
+    "file": "excel-pricing-model.md"
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000003",
+    "niche": "excel",
+    "title": "Find discrepancies between two datasets",
+    "summary": "Compare two spreadsheet outputs and isolate meaningful row-level differences.",
+    "tags": ["excel", "reconciliation", "analysis"],
+    "score": 17,
+    "grab_count": 44,
+    "file": "excel-discrepancy-analysis.md"
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000004",
+    "niche": "excel",
+    "title": "Create a management summary dashboard",
+    "summary": "Convert tabular operational data into a concise management dashboard design.",
+    "tags": ["excel", "dashboard", "management"],
+    "score": 14,
+    "grab_count": 39,
+    "file": "excel-management-dashboard.md"
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000005",
+    "niche": "excel",
+    "title": "Repair formulas without hardcoding",
+    "summary": "Identify broken formula logic and rebuild formulas with proper cell references.",
+    "tags": ["excel", "formulas", "best-practice"],
+    "score": 12,
+    "grab_count": 31,
+    "file": "excel-repair-formulas.md"
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000006",
+    "niche": "excel",
+    "title": "Normalize messy dates and currencies",
+    "summary": "Standardize mixed date, currency, and numeric formats while preserving raw values.",
+    "tags": ["excel", "dates", "currency", "normalization"],
+    "score": 10,
+    "grab_count": 27,
+    "file": "excel-normalize-dates-currency.md"
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000007",
+    "niche": "excel",
+    "title": "Create a dependency-driven financial model",
+    "summary": "Structure assumptions, calculations, and outputs so every result is traceable.",
+    "tags": ["excel", "finance", "dependencies"],
+    "score": 9,
+    "grab_count": 22,
+    "file": "excel-dependency-financial-model.md"
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000008",
+    "niche": "excel",
+    "title": "QA a workbook before submission",
+    "summary": "Run a practical workbook validation checklist before client or management submission.",
+    "tags": ["excel", "qa", "validation"],
+    "score": 8,
+    "grab_count": 18,
+    "file": "excel-workbook-qa.md"
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000001",
+    "niche": "word",
+    "title": "Clean and standardize a financial proposal",
+    "summary": "Transform a messy commercial proposal into a consistent submission-ready Word document.",
+    "tags": ["word", "proposal", "formatting", "commercial"],
+    "score": 31,
+    "grab_count": 79,
+    "file": "word-financial-proposal-cleanup.md"
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000002",
+    "niche": "word",
+    "title": "Create a reliable automatic table of contents",
+    "summary": "Apply heading styles and produce an updateable TOC with correct page references.",
+    "tags": ["word", "toc", "headings"],
+    "score": 18,
+    "grab_count": 43,
+    "file": "word-automatic-toc.md"
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000003",
+    "niche": "word",
+    "title": "Repair complex proposal tables",
+    "summary": "Rebuild malformed Word tables with readable headers, borders, alignment, and pagination.",
+    "tags": ["word", "tables", "proposal"],
+    "score": 16,
+    "grab_count": 40,
+    "file": "word-repair-proposal-tables.md"
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000004",
+    "niche": "word",
+    "title": "Format a professional cover letter",
+    "summary": "Standardize date, recipient, subject, body, closing, signature, and contact blocks.",
+    "tags": ["word", "cover-letter", "business"],
+    "score": 13,
+    "grab_count": 34,
+    "file": "word-cover-letter.md"
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000005",
+    "niche": "word",
+    "title": "Fix page breaks and blank pages",
+    "summary": "Remove accidental blank pages and stabilize section, table, and paragraph pagination.",
+    "tags": ["word", "pagination", "cleanup"],
+    "score": 11,
+    "grab_count": 29,
+    "file": "word-page-breaks.md"
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000006",
+    "niche": "word",
+    "title": "Validate commercial document consistency",
+    "summary": "Check names, dates, totals, terms, headings, page numbers, and formatting for conflicts.",
+    "tags": ["word", "validation", "commercial"],
+    "score": 10,
+    "grab_count": 25,
+    "file": "word-consistency-validation.md"
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000007",
+    "niche": "word",
+    "title": "Standardize terms and conditions",
+    "summary": "Convert inconsistent terms into a clean category-and-terms table without changing meaning.",
+    "tags": ["word", "terms", "contracts"],
+    "score": 8,
+    "grab_count": 19,
+    "file": "word-terms-conditions.md"
+  },
+  {
+    "id": "20000000-0000-4000-8000-000000000008",
+    "niche": "word",
+    "title": "Long-document formatting QA",
+    "summary": "Review a long Word document for layout, TOC, headers, footers, page numbering, and table overflow.",
+    "tags": ["word", "long-document", "qa"],
+    "score": 7,
+    "grab_count": 17,
+    "file": "word-long-document-qa.md"
+  }
+]

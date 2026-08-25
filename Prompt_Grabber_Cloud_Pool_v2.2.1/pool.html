@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prompt Grabber — Prompt Pool</title>
+  <link rel="stylesheet" href="pool.css">
+</head>
+<body>
+  <header class="pool-topbar">
+    <button id="backToHistoryButton" class="pool-brand" type="button" aria-label="Back to Prompt Grabber history">
+      <span class="pool-brand__mark">P</span>
+      <span><strong>Prompt Grabber</strong><small>Prompt Pool</small></span>
+    </button>
+    <label class="pool-search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <input id="poolSearchInput" type="search" placeholder="Search prompts, niches, tags…" autocomplete="off">
+    </label>
+    <div class="auth-area">
+      <button id="signInButton" class="pool-button pool-button--google" type="button">Sign in with Google</button>
+      <button id="profileButton" class="profile-button" type="button" hidden aria-haspopup="menu">
+        <img id="profileAvatar" alt="" hidden>
+        <span id="profileInitial">U</span>
+        <span class="profile-copy"><strong id="profileName">User</strong><small id="profileRole">Member</small></span>
+      </button>
+      <div id="profileMenu" class="profile-menu" hidden>
+        <button id="signOutButton" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="pool-layout">
+    <aside class="pool-sidebar">
+      <div class="sidebar-head">
+        <div><span class="eyebrow">LIBRARY</span><h2>Niches</h2></div>
+        <button id="newNicheButton" class="icon-add" type="button" hidden title="Add niche" aria-label="Add niche">+</button>
+      </div>
+      <button class="niche-item is-active" data-niche-id="all" type="button">
+        <span class="niche-icon">✦</span><span><strong>All prompts</strong><small>Browse everything</small></span>
+      </button>
+      <div id="nicheList" class="niche-list"></div>
+      <div class="sidebar-note">Cloud prompts are separate from your private local history until you Grab them.</div>
+    </aside>
+
+    <section class="pool-content">
+      <section class="pool-hero">
+        <div>
+          <p class="eyebrow">COMMUNITY PROMPT LIBRARY</p>
+          <h1>Prompts worth reusing.</h1>
+          <p>Browse curated and community prompts, vote on what works, then Grab one directly into your Prompt Grabber workflow.</p>
+        </div>
+        <button id="sharePromptButton" class="pool-button pool-button--primary" type="button" hidden>Share a prompt</button>
+      </section>
+
+      <div id="cloudSetupBanner" class="setup-banner" hidden>
+        <div><strong>Cloud setup required</strong><p>Add your Supabase project URL and publishable key in <code>cloud-config.js</code>, then run the included Supabase SQL setup.</p></div>
+        <button id="copyRedirectButton" class="pool-button pool-button--ghost" type="button">Copy OAuth redirect</button>
+      </div>
+
+      <section id="authGate" class="auth-gate" hidden>
+        <div class="auth-gate__icon">P</div>
+        <h2>Sign in to open the Prompt Pool</h2>
+        <p>Your existing local Prompt Grabber history remains private. Google sign-in is only used for cloud pool access, publishing, and voting.</p>
+        <button id="gateSignInButton" class="pool-button pool-button--google" type="button">Continue with Google</button>
+      </section>
+
+      <section id="poolWorkspace" hidden>
+        <div class="pool-toolbar">
+          <div><h2 id="poolSectionTitle">All prompts</h2><p id="poolResultCount">0 prompts</p></div>
+          <select id="poolSortSelect" aria-label="Sort Prompt Pool">
+            <option value="popular">Popular</option>
+            <option value="newest">Newest</option>
+            <option value="grabbed">Most grabbed</option>
+          </select>
+        </div>
+        <div id="poolEmpty" class="pool-empty" hidden><span>✦</span><h3>No prompts found</h3><p>Try a different niche or search.</p></div>
+        <div id="promptGrid" class="prompt-grid"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="promptDetailDialog" class="sheet-dialog">
+    <div class="sheet">
+      <header class="sheet-header">
+        <div><span id="detailNiche" class="prompt-chip">Prompt</span><h2 id="detailTitle">Prompt</h2><p id="detailSummary"></p></div>
+        <button id="closeDetailButton" class="sheet-close" type="button" aria-label="Close">×</button>
+      </header>
+      <pre id="detailMarkdown" class="markdown-view"></pre>
+      <footer class="sheet-footer">
+        <div id="detailMeta" class="sheet-meta"></div>
+        <button id="detailGrabButton" class="pool-button pool-button--primary" type="button">Grab prompt</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <dialog id="publishDialog" class="sheet-dialog sheet-dialog--form">
+    <form id="publishForm" class="sheet">
+      <header class="sheet-header">
+        <div><span class="eyebrow">CLOUD SHARE</span><h2>Share prompt</h2><p>Uploads one Markdown file to the Prompt Pool. Your other local prompts stay private.</p></div>
+        <button id="closePublishButton" class="sheet-close" type="button" aria-label="Close">×</button>
+      </header>
+      <div class="form-body">
+        <label><span>Title</span><input id="publishTitle" maxlength="140" required placeholder="e.g. Clean a messy Excel workbook"></label>
+        <label><span>Niche</span><select id="publishNiche" required></select></label>
+        <label><span>Short description</span><textarea id="publishSummary" maxlength="320" rows="2" placeholder="What this prompt is useful for"></textarea></label>
+        <label><span>Tags</span><input id="publishTags" maxlength="240" placeholder="excel, cleanup, finance"></label>
+        <label><span>Prompt Markdown</span><textarea id="publishMarkdown" maxlength="100000" rows="13" required></textarea><small><span id="publishCount">0</span> / 100,000</small></label>
+        <label id="officialPromptRow" class="check-row" hidden><input id="publishOfficial" type="checkbox"><span><strong>Official prompt</strong><small>Show this as a Prompt Grabber curated prompt.</small></span></label>
+      </div>
+      <footer class="sheet-footer">
+        <span id="publishStatus" class="sheet-meta">Stored as Markdown in Supabase Storage.</span>
+        <div><button id="cancelPublishButton" class="pool-button pool-button--ghost" type="button">Cancel</button><button id="publishSubmitButton" class="pool-button pool-button--primary" type="submit">Publish</button></div>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="nicheDialog" class="sheet-dialog sheet-dialog--small">
+    <form id="nicheForm" class="sheet">
+      <header class="sheet-header"><div><span class="eyebrow">ADMIN</span><h2>Add niche</h2></div><button id="closeNicheButton" class="sheet-close" type="button" aria-label="Close">×</button></header>
+      <div class="form-body">
+        <label><span>Name</span><input id="nicheName" maxlength="60" required placeholder="e.g. PowerPoint"></label>
+        <label><span>Description</span><input id="nicheDescription" maxlength="180" placeholder="Presentation creation and cleanup"></label>
+        <label><span>Icon</span><input id="nicheIcon" maxlength="8" placeholder="✦"></label>
+      </div>
+      <footer class="sheet-footer"><span class="sheet-meta">Niches organize the Prompt Pool.</span><button class="pool-button pool-button--primary" type="submit">Create niche</button></footer>
+    </form>
+  </dialog>
+
+  <div id="poolToast" class="pool-toast" role="status" aria-live="polite"></div>
+  <script src="capture-core.js"></script>
+  <script src="cloud-config.js"></script>
+  <script src="cloud-client.js"></script>
+  <script src="pool.js"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+{
+  "manifest_version": 3,
+  "name": "Prompt Grabber",
+  "description": "Prompt-first Chrome/Edge extension with automatic capture, exact Combine, local AI Compile, autosaved notes, and an authenticated cloud Prompt Pool.",
+  "version": "2.2.1",
+  "minimum_chrome_version": "106",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "identity"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://claude.ai/*",
+    "https://claude.com/*",
+    "https://gemini.google.com/*",
+    "https://bard.google.com/*",
+    "https://grok.com/*",
+    "https://x.com/*",
+    "https://perplexity.ai/*",
+    "https://www.perplexity.ai/*",
+    "https://kimi.com/*",
+    "https://www.kimi.com/*",
+    "https://kimi.moonshot.cn/*",
+    "https://chat.deepseek.com/*",
+    "https://www.deepseek.com/*",
+    "https://moonshot.ai/*",
+    "https://www.moonshot.ai/*",
+    "https://thinker.ai/*",
+    "https://www.thinker.ai/*",
+    "https://chat.thinker.ai/*",
+    "https://*.supabase.co/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "assets/icon-16.png",
+    "32": "assets/icon-32.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  },
+  "action": {
+    "default_title": "Prompt Grabber",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "32": "assets/icon-32.png"
+    }
+  },
+  "options_page": "manager.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*",
+        "https://claude.com/*",
+        "https://gemini.google.com/*",
+        "https://bard.google.com/*",
+        "https://grok.com/*",
+        "https://x.com/*",
+        "https://perplexity.ai/*",
+        "https://www.perplexity.ai/*",
+        "https://kimi.com/*",
+        "https://www.kimi.com/*",
+        "https://kimi.moonshot.cn/*",
+        "https://chat.deepseek.com/*",
+        "https://www.deepseek.com/*",
+        "https://moonshot.ai/*",
+        "https://www.moonshot.ai/*",
+        "https://thinker.ai/*",
+        "https://www.thinker.ai/*",
+        "https://chat.thinker.ai/*"
+      ],
+      "js": [
+        "capture-core.js",
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ]
+}
