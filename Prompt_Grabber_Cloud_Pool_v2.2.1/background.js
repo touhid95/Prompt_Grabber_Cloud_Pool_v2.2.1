@@ -1,6 +1,6 @@
 "use strict";
 
-importScripts("capture-core.js");
+importScripts("capture-core.js", "cloud-config.js", "cloud-client.js", "sync.js");
 
 const Core = globalThis.PromptGrabberCore;
 const CUSTOM_SCRIPT_ID = "prompt-grabber-custom-sites";
@@ -98,6 +98,7 @@ async function savePrompt(payload, sender) {
   prompts.unshift(record);
   trimPromptHistory(prompts, settings.maxPrompts);
   await chrome.storage.local.set({ prompts });
+  globalThis.PromptGrabberSync?.pushPromptBatch([record]);
   return { saved: true, id: record.id };
 }
 
@@ -172,6 +173,7 @@ async function savePromptBatch(payload, sender) {
     prompts.unshift(...records.slice().reverse());
     trimPromptHistory(prompts, settings.maxPrompts);
     await chrome.storage.local.set({ prompts });
+    globalThis.PromptGrabberSync?.pushPromptBatch(records);
   }
 
   return {

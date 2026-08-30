@@ -238,6 +238,26 @@
     return response.ok;
   }
 
+  async function fetchNotes() {
+    const data = await rest("user_notes", { query: { select: "*", order: "updated_at.desc" } });
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function fetchPrompts() {
+    const data = await rest("user_prompts", { query: { select: "*", order: "created_at.desc", limit: "100" } });
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function pushNotes(items) {
+    if (!items.length) return;
+    return rpc("sync_notes", { items });
+  }
+
+  async function pushPrompts(items) {
+    if (!items.length) return;
+    return rpc("sync_prompts", { items });
+  }
+
   async function healthCheck() {
     if (!configured()) return { ok: false, configured: false, authenticated: false, message: "Cloud configuration is missing." };
     const current = await session();
@@ -272,6 +292,10 @@
     uploadMarkdown,
     downloadMarkdown,
     deleteMarkdown,
+    fetchNotes,
+    fetchPrompts,
+    pushNotes,
+    pushPrompts,
     healthCheck,
     parseAuthRedirect,
     redirectUrl() { return chrome.identity?.getRedirectURL?.("supabase-auth") || ""; }

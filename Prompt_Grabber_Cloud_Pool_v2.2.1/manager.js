@@ -4,7 +4,7 @@ const Core = globalThis.PromptGrabberCore;
 const AI = globalThis.PromptGrabberAI;
 const PAGE_SIZE = 30;
 const els = Object.fromEntries([
-  "openPromptPoolButton", "enabledSetting", "captureOnEnterSetting", "toastSetting", "captureUrlSetting", "maxPromptsSetting",
+  "openPromptPoolButton", "syncStatus", "enabledSetting", "captureOnEnterSetting", "toastSetting", "captureUrlSetting", "maxPromptsSetting",
   "supportedSiteList", "customSiteList", "customSiteEmpty", "totalStat", "siteStat", "todayStat",
   "searchInput", "siteFilter", "dateFilter", "sortOrder", "resultCount", "historyEmpty", "historyList",
   "loadMoreButton", "exportJsonButton", "exportCsvButton", "clearAllButton", "clearDialog", "toast",
@@ -51,6 +51,26 @@ async function initialize() {
   await migrateLocalNoteStorage(stored);
 
   if (location.hash === "#rules") openRuleBook();
+
+  if (globalThis.PromptGrabberSync) {
+    globalThis.PromptGrabberSync.onStatusChange((status) => {
+      if (!els.syncStatus) return;
+      els.syncStatus.dataset.status = status;
+      if (status === "synced") {
+        els.syncStatus.textContent = "✓ Synced";
+        els.syncStatus.style.display = "";
+      } else if (status === "syncing") {
+        els.syncStatus.textContent = "Syncing…";
+        els.syncStatus.style.display = "";
+      } else if (status === "offline") {
+        els.syncStatus.textContent = "⚠ Offline";
+        els.syncStatus.style.display = "";
+      } else {
+        els.syncStatus.style.display = "none";
+      }
+    });
+    globalThis.PromptGrabberSync.start();
+  }
 }
 
 function bindEvents() {
@@ -436,6 +456,7 @@ async function savePromptEdit(event) {
   }
 
   await chrome.storage.local.set({ prompts });
+  globalThis.PromptGrabberSync?.pushPrompt(prompt);
   renderHistory();
   renderCombineTray();
   els.promptEditDialog.close();
@@ -447,6 +468,7 @@ async function clearPromptHistoryIfConfirmed() {
   prompts = [];
   combineSelection = [];
   await chrome.storage.local.set({ prompts, combineSelection });
+  globalThis.PromptGrabberSync?.clearPrompts();
   updateFilters();
   renderHistory();
   renderCombineTray();
@@ -552,6 +574,7 @@ async function addManagerNote() {
   const note = { id: crypto.randomUUID(), title: "", body: "", createdAt: now, updatedAt: now };
   notes.unshift(note);
   await chrome.storage.local.set({ notes });
+  globalThis.PromptGrabberSync?.pushNote(note);
   renderManagerNotes(note.id);
   showToast("Note created");
 }
@@ -579,6 +602,7 @@ function handleManagerNoteInput(event) {
     if (version !== noteSaveVersion) return;
     els.managerNotesStatus.textContent = "Saved automatically";
     if (status?.isConnected) status.textContent = "Saved automatically";
+    globalThis.PromptGrabberSync?.pushNote(note);
   }).catch(() => {
     if (version === noteSaveVersion) {
       els.managerNotesStatus.textContent = "Could not save";
@@ -591,8 +615,10 @@ async function handleManagerNoteAction(event) {
   const button = event.target.closest("button[data-note-action]");
   const card = event.target.closest("[data-note-id]");
   if (!button || !card || button.dataset.noteAction !== "delete") return;
-  notes = notes.filter((note) => note.id !== card.dataset.noteId);
+  const noteId = card.dataset.noteId;
+  notes = notes.filter((note) => note.id !== noteId);
   await chrome.storage.local.set({ notes });
+  globalThis.PromptGrabberSync?.deleteNote(noteId);
   renderManagerNotes();
   showToast("Note deleted");
 }

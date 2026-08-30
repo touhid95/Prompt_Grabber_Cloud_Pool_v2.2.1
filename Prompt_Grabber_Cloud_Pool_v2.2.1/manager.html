@@ -11,6 +11,7 @@
       <div class="brand" aria-label="Prompt Grabber">
         <button id="openPromptPoolButton" class="brand-mark" type="button" aria-label="Open Prompt Pool" title="Prompt Pool">P</button>
         <span><strong>Prompt Grabber</strong><small>Automatic prompt history</small></span>
+        <span id="syncStatus" class="sync-pill" style="display: none;"></span>
       </div>
       <div class="header-actions">
         <button id="ruleBookButton" class="button button--secondary" type="button">Rule Book</button>
@@ -278,6 +279,9 @@
 
     <div id="toast" class="app-toast" role="status" aria-live="polite"></div>
     <script src="capture-core.js"></script>
+    <script src="cloud-config.js"></script>
+    <script src="cloud-client.js"></script>
+    <script src="sync.js"></script>
     <script src="ai-compiler.js"></script>
     <script src="manager.js"></script>
   </body>
