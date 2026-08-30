@@ -248,13 +248,6 @@ drop policy if exists "pool prompts insert own" on public.pool_prompts;
 create policy "pool prompts insert own" on public.pool_prompts
 for insert to authenticated with check (
   author_id = auth.uid()
-  and markdown_path = (
-    select n.slug
-    from public.niches n
-    where n.id = niche_id
-      and n.active = true
-    limit 1
-  ) || '/' || auth.uid()::text || '/' || id::text || '.md'
   and (source = 'community' or public.is_admin())
 );
 
