@@ -208,6 +208,43 @@ begin
 end;
 $$;
 
+create or replace function public.publish_prompt(
+  p_id uuid,
+  p_title text,
+  p_summary text,
+  p_tags text[],
+  p_niche_id uuid,
+  p_markdown_path text,
+  p_content_hash text,
+  p_source text
+)
+returns table(id uuid, created_at timestamptz)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required';
+  end if;
+  if p_source = 'official' and not public.is_admin() then
+    raise exception 'Only admins can publish official prompts';
+  end if;
+  if not exists (
+    select 1 from public.niches n
+    where n.id = p_niche_id and n.active = true
+  ) then
+    raise exception 'Niche not found or inactive';
+  end if;
+  return query
+  insert into public.pool_prompts
+    (id, title, summary, tags, niche_id, author_id, markdown_path, content_hash, source, status)
+  values
+    (p_id, p_title, p_summary, p_tags, p_niche_id, auth.uid(), p_markdown_path, p_content_hash, p_source, 'published')
+  returning pool_prompts.id, pool_prompts.created_at;
+end;
+$$;
+
 alter table public.profiles enable row level security;
 alter table public.niches enable row level security;
 alter table public.pool_prompts enable row level security;
@@ -284,8 +321,10 @@ revoke execute on function public.is_admin() from public, anon;
 grant execute on function public.is_admin() to authenticated;
 revoke execute on function public.cast_prompt_vote(uuid, integer) from public, anon;
 revoke execute on function public.increment_prompt_grab(uuid) from public, anon;
+revoke execute on function public.publish_prompt(uuid, text, text, text[], uuid, text, text, text) from public, anon;
 grant execute on function public.cast_prompt_vote(uuid, integer) to authenticated;
 grant execute on function public.increment_prompt_grab(uuid) to authenticated;
+grant execute on function public.publish_prompt(uuid, text, text, text[], uuid, text, text, text) to authenticated;
 
 -- Private Markdown bucket. Files use the OKF-style path:
 --   {niche_slug}/{author_user_id}/{prompt_id}.md

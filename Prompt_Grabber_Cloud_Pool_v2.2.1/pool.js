@@ -519,21 +519,15 @@ async function publishPrompt(event) {
     await Cloud.uploadMarkdown(objectPath, markdown, { upsert: false });
     els.publishStatus.textContent = "Saving Prompt Pool metadata…";
     try {
-      await Cloud.rest("pool_prompts", {
-        method: "POST",
-        body: {
-          id: promptId,
-          title,
-          summary,
-          tags,
-          niche_id: niche.id,
-          author_id: session.user.id,
-          markdown_path: objectPath,
-          content_hash: contentHash,
-          source,
-          status: "published"
-        },
-        prefer: "return=representation"
+      await Cloud.rpc("publish_prompt", {
+        p_id: promptId,
+        p_title: title,
+        p_summary: summary,
+        p_tags: tags,
+        p_niche_id: niche.id,
+        p_markdown_path: objectPath,
+        p_content_hash: contentHash,
+        p_source: source
       });
     } catch (error) {
       await Cloud.deleteMarkdown(objectPath);
