@@ -283,10 +283,7 @@ for select to authenticated using (status = 'published' or author_id = auth.uid(
 
 drop policy if exists "pool prompts insert own" on public.pool_prompts;
 create policy "pool prompts insert own" on public.pool_prompts
-for insert to authenticated with check (
-  author_id = auth.uid()
-  and (source = 'community' or public.is_admin())
-);
+for insert to authenticated with check (author_id = auth.uid());
 
 drop policy if exists "pool prompts update own" on public.pool_prompts;
 create policy "pool prompts update own" on public.pool_prompts
@@ -360,10 +357,6 @@ with check (
   bucket_id = 'prompt-markdown'
   and (storage.foldername(name))[2] = auth.uid()::text
   and storage.filename(name) ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.md$'
-  and exists (
-    select 1 from public.niches n
-    where n.slug = (storage.foldername(name))[1] and n.active = true
-  )
 );
 
 drop policy if exists "prompt markdown update own folder" on storage.objects;
