@@ -248,14 +248,13 @@ drop policy if exists "pool prompts insert own" on public.pool_prompts;
 create policy "pool prompts insert own" on public.pool_prompts
 for insert to authenticated with check (
   author_id = auth.uid()
-  and split_part(markdown_path, '/', 2) = auth.uid()::text
-  and split_part(markdown_path, '/', 3) = id::text || '.md'
-  and exists (
-    select 1 from public.niches n
+  and markdown_path = (
+    select n.slug
+    from public.niches n
     where n.id = niche_id
-      and n.slug = split_part(markdown_path, '/', 1)
       and n.active = true
-  )
+    limit 1
+  ) || '/' || auth.uid()::text || '/' || id::text || '.md'
   and (source = 'community' or public.is_admin())
 );
 
@@ -311,10 +310,14 @@ create policy "prompt markdown read" on storage.objects
 for select to authenticated
 using (
   bucket_id = 'prompt-markdown'
-  and exists (
-    select 1 from public.pool_prompts p
-    where p.markdown_path = name
-      and (p.status = 'published' or p.author_id = auth.uid() or public.is_admin())
+  and (
+    (storage.foldername(name))[2] = auth.uid()::text
+    or public.is_admin()
+    or exists (
+      select 1 from public.pool_prompts p
+      where p.markdown_path = name
+        and p.status = 'published'
+    )
   )
 );
 
