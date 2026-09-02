@@ -422,8 +422,29 @@ create table if not exists public.user_prompts (
 );
 create index if not exists user_prompts_user_created_idx on public.user_prompts (user_id, created_at desc);
 
+create table if not exists public.user_rules (
+  id                uuid primary key,
+  user_id           uuid not null references public.profiles(id) on delete cascade,
+  title             text not null default '',
+  role              text not null default '',
+  context           text not null default '',
+  must              text not null default '',
+  must_not          text not null default '',
+  should            text not null default '',
+  output_format     text not null default '',
+  correct_example   text not null default '',
+  incorrect_example text not null default '',
+  active            boolean not null default true,
+  versions          jsonb not null default '[]'::jsonb,
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now(),
+  deleted_at        timestamptz
+);
+create index if not exists user_rules_user_updated_idx on public.user_rules (user_id, updated_at desc);
+
 alter table public.user_notes   enable row level security;
 alter table public.user_prompts enable row level security;
+alter table public.user_rules   enable row level security;
 
 -- Owner-only access for both tables
 drop policy if exists "user notes owner" on public.user_notes;
@@ -434,9 +455,14 @@ drop policy if exists "user prompts owner" on public.user_prompts;
 create policy "user prompts owner" on public.user_prompts
 for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+drop policy if exists "user rules owner" on public.user_rules;
+create policy "user rules owner" on public.user_rules
+for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
 -- Grants
 grant select, insert, update, delete on public.user_notes   to authenticated;
 grant select, insert, update, delete on public.user_prompts to authenticated;
+grant select, insert, update, delete on public.user_rules   to authenticated;
 
 -- sync_notes RPC: batch-upsert notes for the current user (newest updated_at wins)
 create or replace function public.sync_notes(items jsonb)
@@ -498,8 +524,48 @@ begin
   end if;
 end; $$;
 
+-- sync_rules RPC: batch-upsert rules for the current user
+create or replace function public.sync_rules(items jsonb)
+returns void language plpgsql security definer set search_path = public as $$
+declare item jsonb;
+begin
+  if auth.uid() is null then raise exception 'Authentication required'; end if;
+  for item in select * from jsonb_array_elements(items) loop
+    insert into public.user_rules (
+      id, user_id, title, role, context, must, must_not, should, output_format,
+      correct_example, incorrect_example, active, versions, created_at, updated_at, deleted_at
+    )
+    values (
+      (item->>'id')::uuid, auth.uid(),
+      coalesce(item->>'title', ''),
+      coalesce(item->>'role', ''),
+      coalesce(item->>'context', ''),
+      coalesce(item->>'must', ''),
+      coalesce(item->>'mustNot', ''),
+      coalesce(item->>'should', ''),
+      coalesce(item->>'outputFormat', ''),
+      coalesce(item->>'correctExample', ''),
+      coalesce(item->>'incorrectExample', ''),
+      coalesce((item->>'active')::boolean, true),
+      coalesce(item->'versions', '[]'::jsonb),
+      coalesce((item->>'createdAt')::timestamptz, now()),
+      coalesce((item->>'updatedAt')::timestamptz, now()),
+      (item->>'deletedAt')::timestamptz
+    )
+    on conflict (id) do update set
+      title = excluded.title, role = excluded.role, context = excluded.context,
+      must = excluded.must, must_not = excluded.must_not, should = excluded.should,
+      output_format = excluded.output_format, correct_example = excluded.correct_example,
+      incorrect_example = excluded.incorrect_example, active = excluded.active,
+      versions = excluded.versions,
+      updated_at = excluded.updated_at, deleted_at = excluded.deleted_at
+    where excluded.updated_at >= user_rules.updated_at;
+  end loop;
+end; $$;
+
 revoke execute on function public.sync_notes(jsonb) from public, anon;
 revoke execute on function public.sync_prompts(jsonb) from public, anon;
+revoke execute on function public.sync_rules(jsonb) from public, anon;
 grant execute on function public.sync_notes(jsonb) to authenticated;
 grant execute on function public.sync_prompts(jsonb) to authenticated;
-
+grant execute on function public.sync_rules(jsonb) to authenticated;

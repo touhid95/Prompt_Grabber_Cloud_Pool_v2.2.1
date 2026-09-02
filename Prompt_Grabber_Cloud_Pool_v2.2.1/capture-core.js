@@ -175,6 +175,29 @@
     return buildCompiledPrompt(selectedPrompts, rules);
   }
 
+  function buildStructuredPrompt(selectedPrompts, rules) {
+    const promptText = buildRawCombinedPrompt(selectedPrompts);
+    const ruleBook = buildRuleBookMarkdown(rules);
+    
+    if (!promptText) return "";
+    if (!ruleBook) return promptText; // No rules, just return the raw text
+
+    return `Please process the input provided in the <input> tags according to the rules provided in the <rules> tags.
+
+<rules>
+${ruleBook}
+</rules>
+
+<input>
+${promptText}
+</input>
+
+=========================================
+CRITICAL INSTRUCTION:
+Your primary task is to process the content within the <input> tags. You MUST focus your attention heavily on the <input> content. The <rules> are constraints you must follow while processing the <input>, but the <input> is the core subject of your task. Do not ignore the <input>.
+=========================================`;
+  }
+
   function validIsoDate(value) {
     const parsed = Date.parse(value);
     return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
@@ -265,6 +288,7 @@
     buildCompilerRequest,
     buildCompiledPrompt,
     buildCombinedPrompt,
+    buildStructuredPrompt,
     cleanPromptText,
     detectSite,
     mergeSettings,

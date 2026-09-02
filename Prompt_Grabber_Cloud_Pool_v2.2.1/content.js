@@ -109,6 +109,11 @@
     state.lastText = text;
     state.lastCaptureAt = now;
 
+    if (!chrome?.runtime?.id) {
+      state.active = false;
+      return;
+    }
+
     chrome.runtime.sendMessage({
       type: "CAPTURE_PROMPT",
       payload: {
@@ -129,6 +134,11 @@
     const promptTexts = extractChatUserPrompts();
     if (!promptTexts.length) {
       return Promise.resolve({ ok: false, reason: "no-prompts", found: 0, saved: 0 });
+    }
+
+    if (!chrome?.runtime?.id) {
+      state.active = false;
+      return Promise.resolve({ ok: false, reason: "context-invalidated", found: promptTexts.length, saved: 0 });
     }
 
     return chrome.runtime.sendMessage({

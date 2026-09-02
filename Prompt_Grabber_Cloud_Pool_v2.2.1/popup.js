@@ -12,6 +12,8 @@ const elements = {
   compileCombinedButton: document.querySelector("#compileCombinedButton"), clearCombineButton: document.querySelector("#clearCombineButton"),
   notesStatus: document.querySelector("#notesStatus"), addNoteButton: document.querySelector("#addNoteButton"),
   notesEmpty: document.querySelector("#notesEmpty"), notesList: document.querySelector("#notesList"),
+  ruleToggleMenu: document.querySelector("#ruleToggleMenu"),
+  ruleToggleList: document.querySelector("#ruleToggleList"),
   resultDialog: document.querySelector("#resultDialog"), resultMode: document.querySelector("#resultMode"), resultTitle: document.querySelector("#resultTitle"),
   resultMeta: document.querySelector("#resultMeta"), resultText: document.querySelector("#resultText"), closeResultButton: document.querySelector("#closeResultButton"),
   copyResultButton: document.querySelector("#copyResultButton")
@@ -21,6 +23,7 @@ let settings = Core.mergeSettings();
 let prompts = [];
 let rules = [];
 let combineSelection = [];
+let combineNoteSelection = [];
 let activeTab = null;
 let currentSite = null;
 let editingPromptId = null;
@@ -31,13 +34,14 @@ initialize().catch(() => { elements.statusText.textContent = "Unable to access t
 
 async function initialize() {
   const [stored, tabs] = await Promise.all([
-    chrome.storage.local.get(["settings", "prompts", "rules", "combineSelection", "notes", "quickNote"]),
+    chrome.storage.local.get(["settings", "prompts", "rules", "combineSelection", "combineNoteSelection", "notes", "quickNote"]),
     chrome.tabs.query({ active: true, currentWindow: true })
   ]);
   settings = Core.mergeSettings(stored.settings);
   prompts = Array.isArray(stored.prompts) ? stored.prompts : [];
   rules = Core.normalizeRules(stored.rules);
   combineSelection = normalizeSelection(stored.combineSelection);
+  combineNoteSelection = normalizeNoteSelection(stored.combineNoteSelection);
   notes = normalizeNotes(stored.notes, stored.quickNote);
   activeTab = tabs[0] || null;
   elements.globalToggle.checked = settings.enabled;
@@ -59,6 +63,24 @@ function bindEvents() {
   elements.openManagerButton.addEventListener("click", () => chrome.runtime.openOptionsPage());
   elements.settingsButton.addEventListener("click", () => chrome.runtime.openOptionsPage());
   elements.ruleBookButton.addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("manager.html#rules") }));
+
+  // Rule toggle menu
+  elements.combineRuleCount.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isHidden = elements.ruleToggleMenu.hidden;
+    elements.ruleToggleMenu.hidden = !isHidden;
+    elements.combineRuleCount.setAttribute("aria-expanded", !isHidden);
+    if (isHidden) renderRuleToggleMenu();
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!elements.ruleToggleMenu.hidden && !elements.ruleToggleMenu.contains(e.target) && !elements.combineRuleCount.contains(e.target)) {
+      elements.ruleToggleMenu.hidden = true;
+      elements.combineRuleCount.setAttribute("aria-expanded", "false");
+    }
+  });
+
   elements.enableSiteButton.addEventListener("click", enableCurrentSite);
   elements.captureNowButton.addEventListener("click", captureCurrentChat);
   elements.promptDateFilter.addEventListener("change", renderPrompts);
@@ -89,6 +111,11 @@ function handleStorageChange(changes, areaName) {
   if (changes.combineSelection) {
     combineSelection = normalizeSelection(changes.combineSelection.newValue);
     renderPrompts();
+    renderCombinePanel();
+  }
+  if (changes.combineNoteSelection) {
+    combineNoteSelection = normalizeNoteSelection(changes.combineNoteSelection.newValue);
+    renderNotes();
     renderCombinePanel();
   }
   if (changes.notes) {
@@ -387,21 +414,78 @@ function normalizeSelection(value) {
   return [...new Set(ids)].filter((id) => valid.has(id));
 }
 
-function selectedPrompts() {
-  const byId = new Map(prompts.map((prompt) => [prompt.id, prompt]));
-  return combineSelection.map((id) => byId.get(id)).filter(Boolean);
+function normalizeNoteSelection(value) {
+  const ids = Array.isArray(value) ? value.filter((id) => typeof id === "string") : [];
+  const valid = new Set(notes.map((n) => n.id));
+  return [...new Set(ids)].filter((id) => valid.has(id));
+}
+
+function selectedItems() {
+  const promptById = new Map(prompts.map((p) => [p.id, p]));
+  const noteById = new Map(notes.map((n) => [n.id, n]));
+  const items = [];
+  for (const id of combineSelection) {
+    const p = promptById.get(id);
+    if (p) items.push({ text: p.text });
+  }
+  for (const id of combineNoteSelection) {
+    const n = noteById.get(id);
+    if (n && (n.title || n.body)) {
+      const noteText = [n.title ? `[${n.title}]` : "", n.body].filter(Boolean).join("\n").trim();
+      if (noteText) items.push({ text: noteText });
+    }
+  }
+  return items;
 }
 
 function renderCombinePanel() {
   combineSelection = normalizeSelection(combineSelection);
-  const count = combineSelection.length;
+  combineNoteSelection = normalizeNoteSelection(combineNoteSelection);
+  const count = combineSelection.length + combineNoteSelection.length;
   const activeRuleCount = Core.activeRulesInOrder(rules).length;
   elements.combinePanel.hidden = count === 0;
   elements.combineCount.textContent = count.toLocaleString();
-  elements.combineRuleCount.textContent = activeRuleCount
-    ? `${activeRuleCount} active ${activeRuleCount === 1 ? "rule" : "rules"} · local AI`
-    : "Local AI · rules optional";
+  
+  if (activeRuleCount) {
+    elements.combineRuleCount.innerHTML = `${activeRuleCount} active ${activeRuleCount === 1 ? "rule" : "rules"} ▾ <br><small>local AI</small>`;
+  } else {
+    elements.combineRuleCount.innerHTML = `Rules optional ▾ <br><small>local AI</small>`;
+  }
+
   elements.compileCombinedButton.disabled = count === 0;
+}
+
+function renderRuleToggleMenu() {
+  const sortedRules = [...rules].sort((a, b) => {
+    if (a.active !== b.active) return a.active ? -1 : 1;
+    return (a.title || "").localeCompare(b.title || "");
+  });
+
+  if (sortedRules.length === 0) {
+    elements.ruleToggleList.innerHTML = `<div class="rule-toggle-empty">No rules found. Add one in the Rule Book.</div>`;
+    return;
+  }
+
+  elements.ruleToggleList.replaceChildren(...sortedRules.map((rule) => {
+    const label = document.createElement("label");
+    label.className = "rule-toggle-item";
+    
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = rule.active;
+    input.addEventListener("change", async (e) => {
+      rule.active = e.target.checked;
+      await chrome.storage.local.set({ rules });
+      // renderCombinePanel will be called by storage listener
+    });
+
+    const text = document.createElement("span");
+    text.className = "rule-toggle-text";
+    text.textContent = rule.title || "Untitled Rule";
+
+    label.append(input, text);
+    return label;
+  }));
 }
 
 function normalizeNotes(value, legacyQuickNote = "") {
@@ -441,8 +525,9 @@ function renderNotes(focusId = "") {
 }
 
 function createNoteCard(note) {
+  const selected = combineNoteSelection.includes(note.id);
   const card = document.createElement("article");
-  card.className = "note-card";
+  card.className = `note-card${selected ? " is-selected" : ""}`;
   card.dataset.noteId = note.id;
 
   const top = document.createElement("div");
@@ -456,6 +541,15 @@ function createNoteCard(note) {
   title.dataset.noteField = "title";
   title.setAttribute("aria-label", "Note title");
 
+  // Combine tick button — matches prompt card style
+  const combineBtn = document.createElement("button");
+  combineBtn.type = "button";
+  combineBtn.className = `card-icon-button card-icon-button--grab${selected ? " is-selected" : ""}`;
+  combineBtn.dataset.noteAction = "combine";
+  combineBtn.title = selected ? "Remove from selection" : "Add note to combine/compile";
+  combineBtn.setAttribute("aria-label", combineBtn.title);
+  combineBtn.innerHTML = iconSvg(selected ? "check" : "combine");
+
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "note-card__delete";
@@ -463,7 +557,11 @@ function createNoteCard(note) {
   remove.title = "Delete note";
   remove.setAttribute("aria-label", "Delete note");
   remove.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>';
-  top.append(title, remove);
+
+  const actions = document.createElement("div");
+  actions.className = "note-card__actions";
+  actions.append(combineBtn, remove);
+  top.append(title, actions);
 
   const body = document.createElement("textarea");
   body.className = "note-card__body";
@@ -518,10 +616,28 @@ function handleNoteInput(event) {
 async function handleNoteAction(event) {
   const button = event.target.closest("button[data-note-action]");
   const card = event.target.closest("[data-note-id]");
-  if (!button || !card || button.dataset.noteAction !== "delete") return;
-  notes = notes.filter((note) => note.id !== card.dataset.noteId);
-  await chrome.storage.local.set({ notes });
-  renderNotes();
+  if (!button || !card) return;
+
+  if (button.dataset.noteAction === "combine") {
+    const noteId = card.dataset.noteId;
+    combineNoteSelection = combineNoteSelection.includes(noteId)
+      ? combineNoteSelection.filter((id) => id !== noteId)
+      : [...combineNoteSelection, noteId];
+    await chrome.storage.local.set({ combineNoteSelection });
+    renderNotes();
+    renderCombinePanel();
+    return;
+  }
+
+  if (button.dataset.noteAction === "delete") {
+    const noteId = card.dataset.noteId;
+    combineNoteSelection = combineNoteSelection.filter((id) => id !== noteId);
+    notes = notes.filter((note) => note.id !== noteId);
+    await chrome.storage.local.set({ notes, combineNoteSelection });
+    globalThis.PromptGrabberSync?.deleteNote?.(noteId);
+    renderNotes();
+    renderCombinePanel();
+  }
 }
 
 function formatNoteTime(value) {
@@ -558,15 +674,26 @@ async function copyResultText() {
 }
 
 async function createCombinedOutput() {
-  const selected = selectedPrompts();
+  const selected = selectedItems();
   if (!selected.length) return;
-  const value = Core.buildRawCombinedPrompt(selected);
-  if (!value) return;
-  openResultDialog("combined", value, `${selected.length} ${selected.length === 1 ? "prompt" : "prompts"} · unchanged`);
+  const activeRules = Core.activeRulesInOrder(rules);
+  const value = Core.buildStructuredPrompt(selected, activeRules);
+  elements.resultTitle.textContent = "Combined Prompts";
+  
+  if (activeRules.length > 0) {
+    elements.resultMeta.textContent = `${activeRules.length} ${activeRules.length === 1 ? "rule" : "rules"} applied · ${selected.length} items`;
+  } else {
+    elements.resultMeta.textContent = `${selected.length} items`;
+  }
+  
+  elements.resultMode.textContent = "Raw Text";
+  elements.resultMode.className = "result-mode";
+  elements.resultText.value = value;
+  elements.resultDialog.showModal();
 }
 
 async function compileSelection() {
-  const selected = selectedPrompts();
+  const selected = selectedItems();
   if (!selected.length) return;
   const activeRuleCount = Core.activeRulesInOrder(rules).length;
 
@@ -602,8 +729,10 @@ async function compileSelection() {
 
 async function clearCombineSelection() {
   combineSelection = [];
-  await chrome.storage.local.set({ combineSelection });
+  combineNoteSelection = [];
+  await chrome.storage.local.set({ combineSelection, combineNoteSelection });
   renderPrompts();
+  renderNotes();
   renderCombinePanel();
 }
 

@@ -29,13 +29,22 @@
         <div class="combine-panel__mark" aria-hidden="true">
           <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 12h8M12 8v8"/></svg>
         </div>
-        <div class="combine-panel__copy"><strong><span id="combineCount">0</span> selected</strong><span id="combineRuleCount">0 active rules</span></div>
+        <div class="combine-panel__copy">
+          <strong><span id="combineCount">0</span> selected</strong>
+          <button id="combineRuleCount" type="button" class="rule-toggle-trigger" aria-haspopup="menu" aria-expanded="false">0 active rules</button>
+        </div>
         <div class="combine-actions">
           <button id="copyCombinedButton" class="button button--ghost button--small" type="button" title="Combine prompts unchanged">Combine</button>
           <button id="compileCombinedButton" class="button button--primary button--small" type="button" title="Compile with local AI; active rules are optional">Compile</button>
         </div>
         <button id="clearCombineButton" class="combine-clear" type="button" aria-label="Clear selection" title="Clear selection">×</button>
+        <div id="ruleToggleMenu" class="rule-toggle-menu" hidden>
+          <div class="rule-toggle-menu__header">Select Rules</div>
+          <div id="ruleToggleList" class="rule-toggle-list"></div>
+        </div>
       </section>
+
+      <!-- Prompts section — independently scrollable -->
       <section class="recent-section">
         <div class="section-heading">
           <h2>Recent prompts</h2>
@@ -54,10 +63,14 @@
           </div>
         </div>
         <div id="emptyState" class="empty-state"><div class="empty-icon" aria-hidden="true">✦</div><strong>No prompts yet</strong><p>Submitted prompts will appear here.</p></div>
-        <div id="promptList" class="prompt-list"></div>
+        <div class="scroll-section" id="promptScrollSection">
+          <div id="promptList" class="prompt-list"></div>
+        </div>
       </section>
 
+      <!-- Notes section — independently scrollable -->
       <section class="notes-panel" aria-label="Notes">
+        <div class="notes-drag-handle" aria-hidden="true"></div>
         <div class="notes-panel__head">
           <div class="notes-panel__title">
             <span class="notes-panel__icon" aria-hidden="true">
@@ -71,9 +84,10 @@
           </button>
         </div>
         <div id="notesEmpty" class="notes-empty">No notes yet.</div>
-        <div id="notesList" class="notes-list"></div>
+        <div class="scroll-section" id="notesScrollSection">
+          <div id="notesList" class="notes-list"></div>
+        </div>
       </section>
-
 
       <footer>
         <span>Stored in this browser</span>
@@ -93,6 +107,9 @@
 
     <script src="capture-core.js"></script>
     <script src="ai-compiler.js"></script>
+    <script src="cloud-config.js"></script>
+    <script src="cloud-client.js"></script>
+    <script src="sync.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

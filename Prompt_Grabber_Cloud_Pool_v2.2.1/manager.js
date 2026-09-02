@@ -852,6 +852,7 @@ async function handleRuleToggle(event) {
   updated.versions = [...(rule.versions || []), manualVersion(updated, now)].slice(-50);
   rules = rules.map((item) => item.id === rule.id ? updated : item);
   await saveRules();
+  PromptGrabberSync.pushRule(updated);
   showToast(updated.active ? "Rule on" : "Rule off");
 }
 
@@ -883,6 +884,7 @@ async function handleRuleAction(event) {
     }
     rules = rules.filter((item) => item.id !== rule.id);
     await saveRules();
+    PromptGrabberSync.deleteRule(rule.id);
     showToast("Rule deleted");
   }
 }
@@ -953,6 +955,7 @@ async function saveRuleFromForm(event) {
     : [...rules, candidate];
 
   await saveRules();
+  PromptGrabberSync.pushRule(candidate);
   showToast(existing ? "Rule updated" : "Rule created");
   closeRuleEditor();
 }

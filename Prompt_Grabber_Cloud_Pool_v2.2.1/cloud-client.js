@@ -258,6 +258,16 @@
     return rpc("sync_prompts", { items });
   }
 
+  async function fetchRules() {
+    const data = await rest("user_rules", { query: { select: "*", order: "updated_at.desc" } });
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function pushRules(items) {
+    if (!items.length) return;
+    return rpc("sync_rules", { items });
+  }
+
   async function healthCheck() {
     if (!configured()) return { ok: false, configured: false, authenticated: false, message: "Cloud configuration is missing." };
     const current = await session();
@@ -296,6 +306,8 @@
     fetchPrompts,
     pushNotes,
     pushPrompts,
+    fetchRules,
+    pushRules,
     healthCheck,
     parseAuthRedirect,
     redirectUrl() { return chrome.identity?.getRedirectURL?.("supabase-auth") || ""; }

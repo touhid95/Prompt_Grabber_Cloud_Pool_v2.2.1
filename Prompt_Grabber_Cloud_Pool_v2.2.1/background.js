@@ -19,12 +19,21 @@ chrome.runtime.onInstalled.addListener(async () => {
   await chrome.storage.local.remove("promptOutput");
   await ensureCustomSiteScripts();
   await refreshBadge();
+
+  // Enable side panel on all tabs by default so the user doesn't have to
+  // grant per-tab permission before the panel can open.
+  chrome.sidePanel.setOptions({ enabled: true }).catch(() => undefined);
 });
 
 chrome.runtime.onStartup.addListener(async () => {
   await chrome.storage.local.remove("promptOutput");
   await ensureCustomSiteScripts();
   await refreshBadge();
+});
+
+// Open the side panel when the toolbar icon is clicked.
+chrome.action.onClicked.addListener((tab) => {
+  chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => undefined);
 });
 
 chrome.storage.onChanged.addListener((changes, areaName) => {

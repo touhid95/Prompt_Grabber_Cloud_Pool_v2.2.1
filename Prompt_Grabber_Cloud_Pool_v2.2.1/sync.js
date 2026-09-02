@@ -92,6 +92,42 @@
       .slice(0, CLOUD_PROMPT_LIMIT);
   }
 
+  /**
+   * Union of local + cloud rules. Cloud row wins when its updated_at >= local updatedAt.
+   * Soft-deleted rows stripped.
+   */
+  function mergeRules(local, cloud) {
+    const map = new Map();
+    for (const rule of local) map.set(rule.id, rule);
+    for (const row of cloud) {
+      const loc = map.get(row.id);
+      const cloudTs = Date.parse(row.updated_at || row.created_at || "");
+      const localTs = Date.parse(loc?.updatedAt || loc?.createdAt || "");
+      if (!loc || cloudTs >= localTs) {
+        map.set(row.id, {
+          id: row.id,
+          title: row.title ?? "",
+          role: row.role ?? "",
+          context: row.context ?? "",
+          must: row.must ?? "",
+          mustNot: row.must_not ?? "",
+          should: row.should ?? "",
+          outputFormat: row.output_format ?? "",
+          correctExample: row.correct_example ?? "",
+          incorrectExample: row.incorrect_example ?? "",
+          active: row.active ?? true,
+          versions: row.versions ?? [],
+          createdAt: row.created_at ?? new Date().toISOString(),
+          updatedAt: row.updated_at ?? new Date().toISOString(),
+          _del: row.deleted_at ?? null
+        });
+      }
+    }
+    return [...map.values()]
+      .filter(r => !r._del)
+      .map(({ _del, ...r }) => r);
+  }
+
   // ── Core sync ─────────────────────────────────────────────────────────────────
 
   /**
@@ -106,25 +142,29 @@
 
     setStatus("syncing");
     try {
-      const [cloudNotes, cloudPrompts, stored] = await Promise.all([
+      const [cloudNotes, cloudPrompts, cloudRules, stored] = await Promise.all([
         Cloud.fetchNotes().catch(() => []),
         Cloud.fetchPrompts().catch(() => []),
-        chrome.storage.local.get(["notes", "prompts"])
+        Cloud.fetchRules().catch(() => []),
+        chrome.storage.local.get(["notes", "prompts", "rules"])
       ]);
 
       const localNotes = Array.isArray(stored.notes) ? stored.notes : [];
       const localPrompts = Array.isArray(stored.prompts) ? stored.prompts : [];
+      const localRules = Array.isArray(stored.rules) ? stored.rules : [];
 
       const mergedNotes = mergeNotes(localNotes, cloudNotes);
       const mergedPrompts = mergePrompts(localPrompts, cloudPrompts);
+      const mergedRules = mergeRules(localRules, cloudRules);
 
       // Persist merged data locally (storage change triggers manager re-render)
-      await chrome.storage.local.set({ notes: mergedNotes, prompts: mergedPrompts });
+      await chrome.storage.local.set({ notes: mergedNotes, prompts: mergedPrompts, rules: mergedRules });
 
       // Push merged data back so cloud is up to date too
       await Promise.all([
         Cloud.pushNotes(mergedNotes).catch(() => {}),
-        Cloud.pushPrompts(mergedPrompts).catch(() => {})
+        Cloud.pushPrompts(mergedPrompts).catch(() => {}),
+        Cloud.pushRules(mergedRules).catch(() => {})
       ]);
 
       setStatus("synced");
@@ -227,6 +267,39 @@
     } catch (_e) { /* silent */ }
   }
 
+  /**
+   * Push a single rule to cloud.
+   */
+  async function pushRule(rule) {
+    setStatus("syncing");
+    try {
+      await _withSession(() => Cloud.pushRules([rule]));
+      setStatus("synced");
+    } catch (_e) {
+      setStatus("offline");
+    }
+  }
+
+  /**
+   * Soft-delete a rule in cloud by setting deletedAt, then push.
+   */
+  async function deleteRule(ruleId) {
+    setStatus("syncing");
+    try {
+      await _withSession(() => Cloud.pushRules([{
+        id: ruleId,
+        title: "", role: "", context: "", must: "", mustNot: "", should: "",
+        outputFormat: "", correctExample: "", incorrectExample: "", active: false, versions: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: new Date().toISOString()
+      }]));
+      setStatus("synced");
+    } catch (_e) {
+      setStatus("offline");
+    }
+  }
+
   // ── Public API ────────────────────────────────────────────────────────────────
 
   global.PromptGrabberSync = Object.freeze({
@@ -242,6 +315,10 @@
     pushPromptBatch,
     /** Soft-delete all cloud prompts (Clear All). */
     clearPrompts,
+    /** Push a single rule to cloud. */
+    pushRule,
+    /** Soft-delete a rule in cloud. */
+    deleteRule,
     /** Current sync status string. */
     get status() { return _status; },
     /** Register a callback for status changes: fn(status: string) */
