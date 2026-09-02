@@ -41,8 +41,20 @@
     const parsed = new URL(url);
     if (expectedRedirect) {
       const expected = new URL(expectedRedirect);
-      if (parsed.origin !== expected.origin || parsed.pathname !== expected.pathname) {
-        throw new Error("Unexpected OAuth redirect URL.");
+      // For *.chromiumapp.org redirects (Chrome extension OAuth), allow any subdomain
+      // because the Extension ID changes per machine when loaded unpacked.
+      // For all other origins, enforce an exact origin + pathname match.
+      const bothChromiumApp = /\.chromiumapp\.org$/i.test(parsed.hostname)
+        && /\.chromiumapp\.org$/i.test(expected.hostname);
+      if (bothChromiumApp) {
+        // Only check pathname — the subdomains will differ across machines
+        if (parsed.pathname !== expected.pathname) {
+          throw new Error("Unexpected OAuth redirect URL.");
+        }
+      } else {
+        if (parsed.origin !== expected.origin || parsed.pathname !== expected.pathname) {
+          throw new Error("Unexpected OAuth redirect URL.");
+        }
       }
     }
 
@@ -79,10 +91,29 @@
     authUrl.searchParams.set("provider", "google");
     authUrl.searchParams.set("redirect_to", redirectTo);
 
-    const finalUrl = await chrome.identity.launchWebAuthFlow({
-      url: authUrl.toString(),
-      interactive: true
-    });
+    let finalUrl;
+    try {
+      finalUrl = await chrome.identity.launchWebAuthFlow({
+        url: authUrl.toString(),
+        interactive: true
+      });
+    } catch (err) {
+      // Chrome throws "Authorization page could not be loaded" / "ERR_ABORTED" when
+      // Supabase rejects the redirect URL — this happens on machines whose Extension ID
+      // is not yet in the Supabase "Redirect URLs" allowlist.
+      const msg = String(err?.message || err || "");
+      const isRedirectBlocked = /ERR_ABORTED|could not be loaded|not loaded|aborted/i.test(msg);
+      if (isRedirectBlocked) {
+        throw new Error(
+          `Sign-in blocked: Supabase has not allowed this machine's redirect URL.\n` +
+          `Add the following URL to Supabase → Authentication → URL Configuration → Redirect URLs:\n\n` +
+          `${redirectTo}\n\n` +
+          `Or add the wildcard: https://*.chromiumapp.org/supabase-auth`
+        );
+      }
+      throw err;
+    }
+
     if (!finalUrl) throw new Error("Google sign-in was cancelled.");
 
     const session = parseAuthRedirect(finalUrl, redirectTo);

@@ -86,9 +86,59 @@ async function testOAuthImplicitFlow() {
 
 async function testRedirectValidation() {
   const { Cloud } = makeContext({ fetchImpl: async () => new Response('{}', { status: 200 }) });
+
+  const machine1 = 'https://abcdefghijklmnop.chromiumapp.org/supabase-auth';
+  const machine2 = 'https://zyxwvutsrqponmlk.chromiumapp.org/supabase-auth';
+
+  // Different chromiumapp.org subdomains (different Extension IDs) MUST be allowed
+  // when the path matches — this is the multi-machine wildcard scenario.
+  try {
+    Cloud.parseAuthRedirect(machine2 + '#access_token=a&refresh_token=b', machine1);
+  } catch (err) {
+    assert.fail(`parseAuthRedirect should not throw for different chromiumapp.org subdomains, but threw: ${err.message}`);
+  }
+
+  // A completely wrong non-chromiumapp origin must still be rejected
   assert.throws(
-    () => Cloud.parseAuthRedirect('https://wrong.chromiumapp.org/supabase-auth#access_token=a&refresh_token=b', 'https://abcdefghijklmnop.chromiumapp.org/supabase-auth'),
+    () => Cloud.parseAuthRedirect('https://evil.example.com/supabase-auth#access_token=a&refresh_token=b', machine1),
     /Unexpected OAuth redirect/
+  );
+
+  // A different path on chromiumapp.org must also be rejected
+  assert.throws(
+    () => Cloud.parseAuthRedirect('https://abcdefghijklmnop.chromiumapp.org/other-path#access_token=a&refresh_token=b', machine1),
+    /Unexpected OAuth redirect/
+  );
+}
+
+async function testRedirectBlockedError() {
+  // When launchWebAuthFlow rejects with Chrome's "not loaded" error, the extension
+  // should convert it into a descriptive message that includes the redirect URL,
+  // so the user knows exactly what URL to add to Supabase.
+  const { Cloud, context } = makeContext({
+    launchUrl: undefined,
+    fetchImpl: async () => { throw new Error('should not fetch'); }
+  });
+
+  // Override launchWebAuthFlow to simulate the Chrome ERR_ABORTED rejection
+  context.chrome.identity.launchWebAuthFlow = async () => {
+    throw new Error('Authorization page could not be loaded.');
+  };
+
+  let caught = null;
+  try {
+    await Cloud.signInWithGoogle();
+  } catch (err) {
+    caught = err;
+  }
+  assert.ok(caught, 'should have thrown');
+  assert.ok(
+    /redirect URL|Supabase/i.test(caught.message),
+    `error message should mention redirect URL or Supabase, got: ${caught.message}`
+  );
+  assert.ok(
+    caught.message.includes('chromiumapp.org'),
+    `error message should include the redirect URL, got: ${caught.message}`
   );
 }
 
@@ -163,6 +213,7 @@ async function testHealthCheckSignedOut() {
 
 await testOAuthImplicitFlow();
 await testRedirectValidation();
+await testRedirectBlockedError();
 await testAutomaticRefreshOn401();
 await testStorageOperations();
 await testHealthCheckSignedOut();

@@ -62,6 +62,12 @@
         <h2>Sign in to open the Prompt Pool</h2>
         <p>Your existing local Prompt Grabber history remains private. Google sign-in is only used for cloud pool access, publishing, and voting.</p>
         <button id="gateSignInButton" class="pool-button pool-button--google" type="button">Continue with Google</button>
+        <div id="authErrorBox" class="auth-error-box" hidden>
+          <p id="authErrorMessage" class="auth-error-text"></p>
+          <button id="copyGateRedirectButton" class="pool-button pool-button--ghost pool-button--small" type="button">Copy my redirect URL</button>
+          <small class="auth-error-hint">Add the copied URL to <strong>Supabase → Authentication → URL Configuration → Redirect URLs</strong>, then try signing in again.</small>
+        </div>
+        <p class="auth-gate-hint">First time on a new machine? <button id="copyRedirectHintButton" class="inline-text-button" type="button">Copy this machine's redirect URL</button> and add it to Supabase.</p>
       </section>
 
       <section id="poolWorkspace" hidden>

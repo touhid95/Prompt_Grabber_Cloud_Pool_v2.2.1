@@ -6,7 +6,8 @@ const Core = globalThis.PromptGrabberCore;
 const els = Object.fromEntries([
   "backToHistoryButton", "poolSearchInput", "signInButton", "profileButton", "profileAvatar", "profileInitial", "profileName", "profileRole",
   "profileMenu", "signOutButton", "newNicheButton", "nicheList", "sharePromptButton", "cloudSetupBanner", "copyRedirectButton", "authGate",
-  "gateSignInButton", "poolWorkspace", "poolSectionTitle", "poolResultCount", "poolSortSelect", "poolEmpty", "promptGrid", "promptDetailDialog",
+  "gateSignInButton", "authErrorBox", "authErrorMessage", "copyGateRedirectButton", "copyRedirectHintButton",
+  "poolWorkspace", "poolSectionTitle", "poolResultCount", "poolSortSelect", "poolEmpty", "promptGrid", "promptDetailDialog",
   "detailNiche", "detailTitle", "detailSummary", "detailMarkdown", "detailMeta", "detailGrabButton", "closeDetailButton", "publishDialog", "publishForm",
   "closePublishButton", "cancelPublishButton", "publishTitle", "publishNiche", "publishSummary", "publishTags", "publishMarkdown", "publishCount",
   "officialPromptRow", "publishOfficial", "publishStatus", "publishSubmitButton", "nicheDialog", "nicheForm", "closeNicheButton", "nicheName",
@@ -66,10 +67,29 @@ function bindEvents() {
   els.cancelPublishButton.addEventListener("click", closePublishDialog);
   els.publishMarkdown.addEventListener("input", () => { els.publishCount.textContent = els.publishMarkdown.value.length.toLocaleString(); });
   els.publishForm.addEventListener("submit", publishPrompt);
+
+  // Copy OAuth redirect URL — main setup banner button
   els.copyRedirectButton.addEventListener("click", async () => {
     await navigator.clipboard.writeText(Cloud.redirectUrl());
     showToast("OAuth redirect copied");
   });
+
+  // Copy redirect URL from the error box (shown after a redirect-blocked failure)
+  els.copyGateRedirectButton?.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(Cloud.redirectUrl());
+    if (els.copyGateRedirectButton) els.copyGateRedirectButton.textContent = "Copied!";
+    setTimeout(() => { if (els.copyGateRedirectButton?.isConnected) els.copyGateRedirectButton.textContent = "Copy my redirect URL"; }, 1500);
+    showToast("Redirect URL copied — paste it into Supabase");
+  });
+
+  // Proactive hint button before first sign-in attempt
+  els.copyRedirectHintButton?.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(Cloud.redirectUrl());
+    if (els.copyRedirectHintButton) els.copyRedirectHintButton.textContent = "Copied!";
+    setTimeout(() => { if (els.copyRedirectHintButton?.isConnected) els.copyRedirectHintButton.textContent = "Copy this machine's redirect URL"; }, 1500);
+    showToast("Redirect URL copied");
+  });
+
   document.addEventListener("click", (event) => {
     if (!els.profileMenu.hidden && !event.target.closest(".auth-area")) els.profileMenu.hidden = true;
   });
@@ -90,11 +110,24 @@ function renderSignedOut() {
 async function signIn() {
   els.signInButton.disabled = true;
   els.gateSignInButton.disabled = true;
+  // Clear any previous redirect error box
+  if (els.authErrorBox) els.authErrorBox.hidden = true;
   try {
     session = await Cloud.signInWithGoogle();
     await enterPool();
   } catch (error) {
-    showToast(error?.message || "Google sign-in failed");
+    const msg = String(error?.message || "Google sign-in failed");
+    // Detect redirect-blocked errors and surface the machine's redirect URL
+    const isRedirectBlocked = /redirect URL|not allowed|ERR_ABORTED|could not be loaded|not loaded/i.test(msg);
+    if (isRedirectBlocked && els.authErrorBox && els.authErrorMessage) {
+      // Show the actionable error box inside the auth gate
+      els.authErrorMessage.textContent = "Sign-in was blocked because this machine's redirect URL is not in Supabase's allowlist.";
+      els.authErrorBox.hidden = false;
+      // Also show a brief toast
+      showToast("Redirect URL not allowed — copy it below and add it to Supabase");
+    } else {
+      showToast(msg.split("\n")[0] || "Google sign-in failed");
+    }
   } finally {
     els.signInButton.disabled = false;
     els.gateSignInButton.disabled = false;

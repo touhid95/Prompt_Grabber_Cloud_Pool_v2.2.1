@@ -157,3 +157,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .sheet-footer { align-items:stretch; flex-direction:column; }
   .sheet-footer > div { justify-content:flex-end; }
 }
+
+/* ── Auth error box — shown when redirect URL is not in Supabase allowlist ── */
+.pool-button--small { font-size:9px; min-height:30px; padding:6px 11px; }
+.auth-error-box { background:#fff7ed; border:1px solid #fde2c0; border-radius:14px; display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:16px; padding:14px 18px; max-width:460px; width:100%; }
+.auth-error-text { color:#9a3412; font-size:9px; line-height:1.55; margin:0; text-align:center; }
+.auth-error-hint { color:#b45309; font-size:8px; line-height:1.5; margin:0; text-align:center; }
+.auth-gate-hint { color:var(--muted); font-size:8px; margin:14px 0 0; }
+.inline-text-button { background:transparent; border:0; color:var(--blue); cursor:pointer; font:inherit; font-size:8px; font-weight:650; padding:0; text-decoration:underline; }
+.inline-text-button:hover { color:var(--blue-dark); }
