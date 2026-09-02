@@ -161,7 +161,9 @@ async function renderCurrentSite() {
   elements.statusText.textContent = active ? `Active on ${currentSite.name}` : "Automatic capture is paused";
   elements.siteMessage.textContent = active ? "Prompts are saved when sent" : "Turn capture on above";
   if (active) elements.siteDot.classList.add("status-dot--active");
-  elements.captureNowButton.hidden = !active;
+  // "Grab now" is a manual on-demand action — always show it on a recognised site,
+  // even when automatic capture is paused, so the user can still scan the chat.
+  elements.captureNowButton.hidden = false;
 }
 
 async function enableCurrentSite() {

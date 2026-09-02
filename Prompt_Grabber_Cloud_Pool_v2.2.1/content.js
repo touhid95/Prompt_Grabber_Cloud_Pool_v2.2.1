@@ -26,6 +26,8 @@
 
     if (!builtIn && !isCustom) return;
 
+    // Always record which site we're on so the manual "Grab now" scan works
+    // even when automatic capture is paused or blocked.
     state.site = builtIn || {
       id: `custom:${location.hostname}`,
       name: readableSiteName(),
@@ -33,6 +35,11 @@
       sendButtons: Core.GENERIC_SEND_BUTTONS
     };
 
+    // Always listen for messages (e.g. CAPTURE_CHAT_PROMPTS for manual "Grab now")
+    // regardless of whether automatic capture is enabled.
+    chrome.runtime.onMessage.addListener(onRuntimeMessage);
+
+    // Automatic capture (event listeners) only activates when enabled and not blocked.
     if (!state.settings.enabled || isBlocked()) return;
 
     state.active = true;
@@ -40,7 +47,6 @@
     document.addEventListener("submit", onSubmit, true);
     document.addEventListener("keydown", onKeyDown, true);
     document.addEventListener("pointerdown", onPointerDown, true);
-    chrome.runtime.onMessage.addListener(onRuntimeMessage);
 
     if (state.settings.showActivationToast) showActivationToast();
   }
@@ -129,7 +135,9 @@
 
 
   function captureChatPrompts() {
-    if (!state.active) return Promise.resolve({ ok: false, reason: "inactive", found: 0, saved: 0 });
+    // Manual "Grab now" works whenever the site is detected, even if automatic
+    // capture is currently paused (state.active may be false when the toggle is off).
+    if (!state.site) return Promise.resolve({ ok: false, reason: "inactive", found: 0, saved: 0 });
 
     const promptTexts = extractChatUserPrompts();
     if (!promptTexts.length) {
